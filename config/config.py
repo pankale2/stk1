@@ -1,2 +1,2 @@
-KITE_API_KEY = "your_kite_api_key"
-KITE_API_SECRET = "your_kite_api_secret"
+UPSTOX_API_KEY = "your_upstox_api_key"
+UPSTOX_API_SECRET = "your_upstox_api_secret"
