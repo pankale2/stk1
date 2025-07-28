@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Strategy Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f5f5f5; font-size: 13px; }
+        .container { max-width: 1920px; margin: 10px auto; background: #fff; border-radius: 6px; box-shadow: 0 2px 8px #0001; padding: 16px; }
+        h1 { color: #007bff; font-size: 22px; margin-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+        th, td { padding: 6px 4px; border-bottom: 1px solid #eee; text-align: center; font-size: 12px; }
+        th { background: #007bff; color: #fff; font-size: 13px; }
+        .signal-buy { color: #28a745; font-weight: 500; font-size: 12px; }
+        .signal-sell { color: #dc3545; font-weight: 500; font-size: 12px; }
+        .signal-none { color: #6c757d; font-size: 12px; }
+        .status { margin-top: 10px; color: #888; font-size: 12px; }
+        .collapsible { background: #f1f1f1; color: #333; cursor: pointer; padding: 6px; width: 100%; border: none; text-align: left; outline: none; font-size: 13px; margin-top: 6px; border-radius: 4px; }
+        .active, .collapsible:hover { background-color: #e2e6ea; }
+        .content { padding: 0 12px; display: none; overflow: hidden; background-color: #f9f9f9; border-radius: 0 0 4px 4px; }
+        .pos-long { color: #28a745; font-size: 12px; }
+        .pos-short { color: #dc3545; font-size: 12px; }
+        .pnl-pos { color: #28a745; font-size: 12px; }
+        .pnl-neg { color: #dc3545; font-size: 12px; }
+        .error-msg { color: #dc3545; font-size: 11px; margin-top: 2px; }
+    </style>
+    <script>
+        // Auto-refresh every 10 seconds
+        setTimeout(function(){ window.location.reload(); }, 10000);
+        // Collapsible logic
+        document.addEventListener('DOMContentLoaded', function() {
+            var coll = document.getElementsByClassName("collapsible");
+            for (var i = 0; i < coll.length; i++) {
+                coll[i].addEventListener("click", function() {
+                    this.classList.toggle("active");
+                    var content = this.nextElementSibling;
+                    if (content.style.display === "block") {
+                        content.style.display = "none";
+                    } else {
+                        content.style.display = "block";
+                    }
+                });
+            }
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>📈 Intraday Strategy Dashboard</h1>
+        <div class="status">
+            <b>Last Run:</b> {{ state.last_run or 'Never' }}
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Scrip</th>
+                    <th>Current Price</th>
+                    <th>Supertrend</th>
+                    <th>DEMA</th>
+                    <th>Signal</th>
+                    <th>Position</th>
+                    <th>Order</th>
+                    <th>Broker Position</th>
+                    <th>Broker Orders</th>
+                    <th>Today's Orders</th>
+                    <th>Today's P&amp;L</th>
+                    <th>Error</th>
+        <tbody>
+        {% for scrip in SCRIPS %}
+        {% set symbol = scrip.symbol %}
+        <tr>
+            <td>{{ symbol }}</td>
+            <td>
+                {% if state.current.get(symbol) and state.current[symbol].price not in ['-', None] %}
+                    {{ '%.2f'|format(state.current[symbol].price|float) }}
+                {% else %}-{% endif %}
+            </td>
+            <td>
+                {% if state.current.get(symbol) and state.current[symbol].supertrend not in ['-', None] %}
+                    {{ '%.2f'|format(state.current[symbol].supertrend|float) }}
+                {% else %}-{% endif %}
+            </td>
+            <td>
+                {% if state.current.get(symbol) and state.current[symbol].dema not in ['-', None] %}
+                    {{ '%.2f'|format(state.current[symbol].dema|float) }}
+                {% else %}-{% endif %}
+            </td>
+            <td>
+                {% if state.signals.get(symbol) %}
+                    {{ state.signals[symbol] }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                {% if state.positions.get(symbol) %}
+                    {{ state.positions[symbol].side }} @ {{ '%.2f'|format(state.positions[symbol].entry|float) }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                {% if state.orders.get(symbol) %}
+                    {{ state.orders[symbol] }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                {% if live_positions.get(symbol) %}
+                    {{ '%.2f'|format(live_positions[symbol].quantity|float) }} @ {{ '%.2f'|format(live_positions[symbol].average_price|float) }} ({{ live_positions[symbol].product }})
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                {% if live_orders.get(symbol) %}
+                    <ul style="margin:0;padding:0;list-style:none;">
+                    {% for order in live_orders[symbol] %}
+                        <li>{{ order.transaction_type }} {{ '%.2f'|format(order.quantity|float) }} @ {{ '%.2f'|format(order.average_price|float) }} ({{ order.status }})</li>
+                    {% endfor %}
+                    </ul>
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                {{ state.order_count[symbol] if state.order_count.get(symbol) else 0 }}
+            </td>
+            <td>
+                {% if state.pnl_today.get(symbol) is not none %}
+                    <span class="{{ 'pnl-pos' if state.pnl_today[symbol] >= 0 else 'pnl-neg' }}">{{ '%.2f'|format(state.pnl_today[symbol]|float) }}</span>
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                {% if state.errors and state.errors.get(symbol) %}
+                    <span style="color:red">{{ state.errors[symbol] }}</span>
+                {% elif state.current.get(symbol) is none or state.current[symbol].price == '-' %}
+                    <span style="color:gray">No data</span>
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+        </table>
+        <div style="margin-top:30px;">
+            <a href="/holdings">View Holdings</a> | <a href="/logout">Logout</a>
+        </div>
+    </div>
+</body>
+</html>
+        <div style="margin-top:30px;">
+            <a href="/holdings">View Holdings</a> | <a href="/logout">Logout</a>
+        </div>
+    </div>
+</body>
+</html>

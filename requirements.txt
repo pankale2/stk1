@@ -1,3 +1,6 @@
 flask
 requests
 upstox-python-sdk
+pandas
+ta
+apscheduler

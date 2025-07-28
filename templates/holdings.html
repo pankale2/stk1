@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upstox Holdings</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #007bff;
+        }
+        .header h1 {
+            color: #007bff;
+            margin: 0;
+        }
+        .logout-btn {
+            background-color: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            text-decoration: none;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+        }
+        .logout-btn:hover {
+            background-color: #c82333;
+        }
+        .holdings-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .holdings-table th,
+        .holdings-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .holdings-table th {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+        .holdings-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        .positive {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .negative {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .no-holdings {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+        .summary {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .summary h3 {
+            margin: 0 0 10px 0;
+            color: #495057;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📈 My Holdings</h1>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+        </div>
+
+        {% if holdings %}
+            <div class="summary">
+                <h3>Portfolio Summary</h3>
+                <p><strong>Total Holdings:</strong> {{ holdings|length }} stocks</p>
+            </div>
+
+            <table class="holdings-table">
+                <thead>
+                    <tr>
+                        <th>Stock Symbol</th>
+                        <th>Company Name</th>
+                        <th>Quantity</th>
+                        <th>Average Price</th>
+                        <th>Current Price</th>
+                        <th>Market Value</th>
+                        <th>P&L</th>
+                        <th>P&L %</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for holding in holdings %}
+                    <tr>
+                        <td><strong>{{ holding.trading_symbol or 'N/A' }}</strong></td>
+                        <td>{{ holding.company_name or 'N/A' }}</td>
+                        <td>{{ holding.quantity or 0 }}</td>
+                        <td>₹{{ "%.2f"|format(holding.average_price or 0) }}</td>
+                        <td>₹{{ "%.2f"|format(holding.last_price or 0) }}</td>
+                        <td>₹{{ "%.2f"|format((holding.quantity or 0) * (holding.last_price or 0)) }}</td>
+                        <td class="{% if (holding.pnl or 0) >= 0 %}positive{% else %}negative{% endif %}">
+                            ₹{{ "%.2f"|format(holding.pnl or 0) }}
+                        </td>
+                        <td class="{% if (holding.pnl or 0) >= 0 %}positive{% else %}negative{% endif %}">
+                            {{ "%.2f"|format(((holding.pnl or 0) / ((holding.quantity or 1) * (holding.average_price or 1))) * 100) }}%
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="no-holdings">
+                <h3>No Holdings Found</h3>
+                <p>You don't have any holdings in your portfolio yet.</p>
+            </div>
+        {% endif %}
+
+        <div style="margin-top: 20px; text-align: center; color: #6c757d; font-size: 12px;">
+            <p>Data provided by Upstox API | Last updated: {{ last_updated }}</p>
+        </div>
+    </div>
+</body>
+</html>
